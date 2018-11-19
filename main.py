@@ -138,10 +138,30 @@ if __name__ == "__main__":
         returns += runEpisode(qAgent, env, opts.discount)
 
     ############################
-    # Get the Sarsa agent
+    # Get the Sarsa(0) agent
     ############################
     import sarsaAgents
     sarsaAgent = sarsaAgents.SarsaAgent(**qLearnOpts)
+
+    returns = 0
+    for episode in range(1, opts.episodes+1):
+        returns += runEpisode(sarsaAgent, env, opts.discount)
+
+    ############################
+    # Get the Sarsa(lambda) agent
+    ############################
+    import sarsaLambdaAgents
+    sarsaAgent = sarsaLambdaAgents.SarsaLambdaAgent(lamb=0.9, **qLearnOpts)
+
+    returns = 0
+    for episode in range(1, opts.episodes+1):
+        returns += runEpisode(sarsaAgent, env, opts.discount)
+
+    ############################
+    # Get the approximate Sarsa(lambda) agent
+    ############################
+    import sarsaLambdaAgents
+    sarsaAgent = sarsaLambdaAgents.ApproximateSarsaAgent(lamb=0.9, **qLearnOpts)
 
     returns = 0
     for episode in range(1, opts.episodes+1):

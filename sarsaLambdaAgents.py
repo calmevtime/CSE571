@@ -17,8 +17,9 @@ from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
 import random,util,math
+import collections
 
-class SarsaAgent(ReinforcementAgent):
+class SarsaLambdaAgent(ReinforcementAgent):
     """
       Q-Learning Agent
 
@@ -38,12 +39,14 @@ class SarsaAgent(ReinforcementAgent):
         - self.getLegalActions(state)
           which returns legal actions for a state
     """
-    def __init__(self, **args):
+    def __init__(self, lamb, **args):
         "You can initialize Q-values here..."
         ReinforcementAgent.__init__(self, **args)
 
         "*** YOUR CODE HERE ***"
         self.values = util.Counter()
+        self.e = util.Counter()
+        self.lamb = lamb
 
     def getQValue(self, state, action):
         """
@@ -124,10 +127,14 @@ class SarsaAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        cur_qvalue = self.getQValue(state, action)
         nextAction = self.getAction(nextState)
-        new_qvalue = cur_qvalue + self.alpha * (reward + self.discount * self.getQValue(nextState, nextAction) - cur_qvalue)
-        self.values[(state, action)] = new_qvalue
+        diff = reward + self.discount * self.getQValue(nextState, nextAction) - self.getQValue(state, action)
+        self.e[(state, action)] += 1
+
+        for s, actions in self.values.keys():
+            for a in actions:
+                self.values[(s, a)] += self.alpha * diff * self.e[(s, a)]
+                self.e[(s, a)] *= self.discount * self.lamb
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)
@@ -136,7 +143,7 @@ class SarsaAgent(ReinforcementAgent):
         return self.computeValueFromQValues(state)
 
 
-class PacmanQAgent(SarsaAgent):
+class PacmanQAgent(SarsaLambdaAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
     def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
@@ -155,7 +162,7 @@ class PacmanQAgent(SarsaAgent):
         args['alpha'] = alpha
         args['numTraining'] = numTraining
         self.index = 0  # This is always Pacman
-        SarsaAgent.__init__(self, **args)
+        SarsaLambdaAgent.__init__(self, **args)
 
     def getAction(self, state):
         """
@@ -163,7 +170,7 @@ class PacmanQAgent(SarsaAgent):
         informs parent of action for Pacman.  Do not change or remove this
         method.
         """
-        action = SarsaAgent.getAction(self,state)
+        action = SarsaLambdaAgent.getAction(self,state)
         self.doAction(state,action)
         return action
 
@@ -204,10 +211,14 @@ class ApproximateSarsaAgent(PacmanQAgent):
         "*** YOUR CODE HERE ***"
         nextAction = self.getAction(nextState)
         diff = reward + self.discount * self.getQValue(nextState, nextAction) - self.getQValue(state, action)
-        features = self.featExtractor.getFeatures(state, action)
+        self.e[(state, action)] += 1
 
-        for key in features.keys():
-            self.weights[key] += self.alpha * diff * features[key]
+        features = self.featExtractor.getFeatures(state, action)
+        for s, actions in self.values.keys():
+            for a in actions:
+                for i in features.keys():
+                    self.weights[i] += self.alpha * diff * self.e[(s,a)] * features[i]
+                    self.e[(s, a)] *= self.discount * self.lamb
 
     def final(self, state):
         "Called at the end of each game."
