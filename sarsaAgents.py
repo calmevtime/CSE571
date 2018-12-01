@@ -106,7 +106,7 @@ class SarsaAgent(ReinforcementAgent):
         """
         # Pick Action
         legalActions = self.getLegalActions(state)
-        action = None
+
         "*** YOUR CODE HERE ***"
         if not util.flipCoin(self.epsilon):
             action = self.computeActionFromQValues(state)

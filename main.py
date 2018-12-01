@@ -17,7 +17,7 @@ def parseOptions():
                          metavar="P", help='How often action results in ' +
                          'unintended direction (default %default)' )
     optParser.add_option('-e', '--epsilon',action='store',
-                         type='float',dest='epsilon',default=0.3,
+                         type='float',dest='epsilon',default=0.1,
                          metavar="E", help='Chance of taking a random action in q-learning (default %default)')
     optParser.add_option('-l', '--learningRate',action='store',
                          type='float',dest='learningRate',default=0.5,
@@ -136,6 +136,26 @@ if __name__ == "__main__":
     returns = 0
     for episode in range(1, opts.episodes+1):
         returns += runEpisode(qAgent, env, opts.discount)
+
+    ############################
+    # Get the monte-carlo-learning agent
+    ############################
+    import monteCarloAgents
+
+    actionFn = lambda state: mdp.getPossibleActions(state)
+    qLearnOpts = {'gamma': opts.discount,
+                  'alpha': opts.learningRate,
+                  'epsilon': opts.epsilon,
+                  'actionFn': actionFn}
+
+    grid_width = env.gridWorld.grid.width
+    grid_height = env.gridWorld.grid.height
+    mcAgent = monteCarloAgents.MonteCarloAgent(grid_width, grid_height, **qLearnOpts)
+
+    returns = 0
+
+    for episode in range(1, opts.episodes+1):
+        returns += runEpisode(mcAgent, env, opts.discount)
 
     ############################
     # Get the Sarsa(0) agent
